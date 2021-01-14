@@ -99,7 +99,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // модальное окно
 
     const open = document.querySelectorAll('[data-modal]'); // для обращения к атрибуту
-    const close = document.querySelector('[data-close]');
     const modal = document.querySelector('.modal');
 
 
@@ -126,14 +125,13 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.style.overflow = '';
     }
 
-    close.addEventListener('click', closeModal);
     // modal.style.display = 'none';
     // modal.classList.add('hide');
     // modal.classList.remove('show');
     // document.body.style.overflow = ''; // позволяет снова прокручивать страницу
 
     modal.addEventListener('click', (e) => { // обязательно следует передать событие
-        if (e.target === modal) { // e.taget - то , куда кликнул пользователь, отслеживает
+        if (e.target === modal || e.target.getAttribute('data-close') == '') { // e.taget - то , куда кликнул пользователь, отслеживает
             closeModal();
         }
     });
@@ -299,7 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const forms = document.querySelectorAll('form');
 
     const message = {
-        loading: 'Loading',
+        loading: 'img/form/spinner.svg', // указываем путь к картинке
         success: 'Thank You',
         failure: 'Something went wrong'
     };
@@ -311,12 +309,16 @@ document.addEventListener('DOMContentLoaded', () => {
         form.addEventListener('submit', (e) => { // submit срабатывает каждый раз когда мы пытаемся отрпавить какую-то форму, при нажатии энтера или нужной кнопки
             e.preventDefault(); // чтобы страница постоянно не перегружалась
 
-            const statusMessage = document.createElement('div');
-            statusMessage.classList.add('status');
-            statusMessage.textContent = message.loading; // создаем новый блок на странице, куда мы выведем какое-то сообщение
+            const statusMessage = document.createElement('img'); // создаем картинку загрузки
+            statusMessage.src = message.loading; // создаем изображение и подставляем ему атрибут - путь к картинке
+            statusMessage.style.cssText = `
+                display: block;
+                margin : 0 auto;
+            `; // динамически добавляем несколько стилей для загрузки
             // например сообщение о загрузке, динамически создается еще один блок
-            form.append(statusMessage); // просто добавляем новый блок к форме
-
+            // form.append(statusMessage); // просто добавляем новый блок к форме
+            form.insertAdjacentElement('afterend', statusMessage ); // указываем два аргумента, 1- куда вставляем элемент, 2- то, что нам нужно вставить
+                // спинер будет появляться полсе всех действий в модальном окне
             const request = new XMLHttpRequest(); // создаем новый пост запрос
             request.open('POST', 'server.php');  // указываем запрос и путь, на который ссылаемся
             // request.setRequestHeader('Content-type','multipart/form-data'); // указываем тип приходящего контента
@@ -335,21 +337,44 @@ document.addEventListener('DOMContentLoaded', () => {
             request.addEventListener('load', () => { // отслеживаем конечную загрузку запроса
                 if (request.status === 200) { // если все в порядке
                     console.log(request.response);
-                    statusMessage.textContent = message.success; // когда обработался успешно запрос, меняем на новое сообщение
+                    showThanksModal(message.success); // когда обработался успешно запрос, меняем на новое сообщение
                     form.reset(); // сбрасываем форму
-                    setTimeout(()=>{
-                        statusMessage.remove();
-                    }, 2000);
+                    statusMessage.remove(); // статус мессадж используется только для загрузки, таймаут не нужен
+                   
                 } else {
-                    statusMessage.textContent = message.failure;
+                    showThanksModal(message.failure);
                     form.reset(); // сбрасываем форму
-                    setTimeout(()=>{
-                        statusMessage.remove(); // чтобы лишняя инфа исчезла через какое-то время
-                    }, 2000);
+                    
+                    statusMessage.remove(); // чтобы лишняя инфа исчезла через какое-то время
+                    
                 }
 
             });
         }); 
+    }
+
+    function showThanksModal(message) {
+        const prevModalDialog = document.querySelector('.modal__dialog'); 
+        prevModalDialog.classList.add('hide'); // прячем основное модальное окно
+
+        openModal(); // отвечает за отркытие модальных окон
+
+        const thanksModal = document.createElement('div'); // создаем новое модальное окно для запроса
+        thanksModal.classList.add('modal__dialog');
+        thanksModal.innerHTML = `
+            <div class='modal__content'>
+                <div class='modal__close' data-close>×</div>
+                <div class='modal__title'>${message}</div>
+            </div>
+        `;
+
+        document.querySelector('.modal').append(thanksModal);
+        setTimeout(() => {
+            thanksModal.remove();
+            prevModalDialog.classList.add('show'); 
+            prevModalDialog.classList.remove('hide');
+            closeModal(); // закрывает все модальные окна
+        }, 4000); // через 4 секунды модальное окно с ответом на запрос пропадает, а обычное модальное окно с запросом снова добавляется как эелмент
     }
 });
 // style.display - Многоцелевое свойство, которое определяет, как элемент должен быть показан в документе
