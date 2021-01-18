@@ -319,10 +319,12 @@ document.addEventListener('DOMContentLoaded', () => {
             // form.append(statusMessage); // просто добавляем новый блок к форме
             form.insertAdjacentElement('afterend', statusMessage ); // указываем два аргумента, 1- куда вставляем элемент, 2- то, что нам нужно вставить
                 // спинер будет появляться полсе всех действий в модальном окне
-            const request = new XMLHttpRequest(); // создаем новый пост запрос
-            request.open('POST', 'server.php');  // указываем запрос и путь, на который ссылаемся
+
+
+            // const request = new XMLHttpRequest(); // создаем новый пост запрос
+            // request.open('POST', 'server.php');  // указываем запрос и путь, на который ссылаемся
             // request.setRequestHeader('Content-type','multipart/form-data'); // указываем тип приходящего контента
-            request.setRequestHeader('Content-type','application/json'); //для работы с json форматом 
+            // request.setRequestHeader('Content-type','application/json'); //для работы с json форматом 
             const formData = new FormData(form); // во внутрь помещаем форму, которой нужно собрать данные
             
             const object = {};
@@ -330,26 +332,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 object[key] = value; // на основании данных formData сформировали объект для работа с json
             }); // чтобы можно было использовать конвертацию json
 
-            const json = JSON.stringify(object); // функция превращает обычный объект в json
-
-            request.send(json); // отпарвляем запрос json
-
-            request.addEventListener('load', () => { // отслеживаем конечную загрузку запроса
-                if (request.status === 200) { // если все в порядке
-                    console.log(request.response);
+            fetch('server.php', {
+                method: 'POST',
+                headers: {
+                    'Content-type':'application/json' // прописываем заголовок
+                },
+                body: JSON.stringify(object)
+            })
+            .then(data => data.text()) // превращаем ответ в обычный текст
+            .then(data => {
+                    console.log(data); // данные - которые возвращаются из промиса, то что вернул сервер
                     showThanksModal(message.success); // когда обработался успешно запрос, меняем на новое сообщение
-                    form.reset(); // сбрасываем форму
-                    statusMessage.remove(); // статус мессадж используется только для загрузки, таймаут не нужен
-                   
-                } else {
-                    showThanksModal(message.failure);
-                    form.reset(); // сбрасываем форму
-                    
-                    statusMessage.remove(); // чтобы лишняя инфа исчезла через какое-то время
-                    
-                }
-
+                    // form.reset(); // сбрасываем форму
+                    statusMessage.remove(); // статус мессадж используется только для загрузки, таймаут не нужен 
+            }).catch(() => {
+                showThanksModal(message.failure); //  в результате ошибки выдаст другое сообщение
+            }).finally(() => {
+                form.reset();
             });
+
+
+            // request.addEventListener('load', () => { // отслеживаем конечную загрузку запроса
+            //     if (request.status === 200) { // если все в порядке
+            //         console.log(request.response);
+            //         showThanksModal(message.success); // когда обработался успешно запрос, меняем на новое сообщение
+            //         form.reset(); // сбрасываем форму
+            //         statusMessage.remove(); // статус мессадж используется только для загрузки, таймаут не нужен
+                   
+            //     } else {
+            //         showThanksModal(message.failure);
+            //         form.reset(); // сбрасываем форму
+                    
+            //         statusMessage.remove(); // чтобы лишняя инфа исчезла через какое-то время
+                    
+            //     }
+
+            // });
         }); 
     }
 
@@ -376,5 +394,22 @@ document.addEventListener('DOMContentLoaded', () => {
             closeModal(); // закрывает все модальные окна
         }, 4000); // через 4 секунды модальное окно с ответом на запрос пропадает, а обычное модальное окно с запросом снова добавляется как эелмент
     }
+
+    //DOM API - различные методы, которые позволяют работать с элементами на странице- встроенная возможность
+    // у мобильного телефона - доступ к вибрации, к камере и тд.
+    // fetch API - прописываем fetch и с кобках указываем адрес, на который мы будем посылать запрос,
+    // может получится классический гет запрос с данными с указанного адреса
+    // fetch использует промисы
+    // fetch('https://jsonplaceholder.typicode.com/posts', {
+    //     method: 'POST', // устанвливаем нужный метод(запрос)
+    //     body: JSON.stringify({name : 'KIRILL'}), // объект сразу превратиться в json формат и мы его отправим при помощи fetch
+    //     headers: {
+    //         'Content-type' : 'application/json'
+    //     }
+    // })
+    //     .then(response => response.json()) // получаем какой-то response- ответ, в формате json/ команда .json()
+    //     // парсит ответ на нужный нам формат обычного объекта js
+    //     // но эта команда возвращает промис!
+    //     .then(json => console.log(json));
 });
 // style.display - Многоцелевое свойство, которое определяет, как элемент должен быть показан в документе
