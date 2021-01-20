@@ -411,5 +411,9 @@ document.addEventListener('DOMContentLoaded', () => {
     //     // парсит ответ на нужный нам формат обычного объекта js
     //     // но эта команда возвращает промис!
     //     .then(json => console.log(json));
+
+    fetch('http://localhost:3000/menu')
+        .then(data => data.json()) // берем ответ от сервера превращая в обычный js
+        .then(res => console.log(res));
 });
 // style.display - Многоцелевое свойство, которое определяет, как элемент должен быть показан в документе
