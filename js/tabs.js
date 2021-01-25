@@ -1,5 +1,7 @@
 'use strict';
 
+// const { create } = require("json-server");
+
 document.addEventListener('DOMContentLoaded', () => {
     // tabs
     const tabs = document.querySelectorAll('.tabheader__item'); // берем все кнопки
@@ -232,22 +234,22 @@ document.addEventListener('DOMContentLoaded', () => {
             this.classes = classes;
             this.parent = document.querySelector(parentSelector);
             this.transfer = 27;
-            this.changeToUAH(); 
+            this.changeToUAH();
         }
 
         changeToUAH() {
-            this.price = this.price * this.transfer; 
+            this.price = this.price * this.transfer;
         }
 
         render() {
             const element = document.createElement('div');
-            if (this.classes.length === 0 ) { // проверям на наличие классов, если их нет, ставим дефолтный
+            if (this.classes.length === 0) { // проверям на наличие классов, если их нет, ставим дефолтный
                 this.element = 'menu__item';
                 element.classList.add(this.element);
             } else {
                 this.classes.forEach(className => {
                     element.classList.add(className); // для передачи каких-либо классов нашему созданному элементу
-                });    
+                });
             }
             element.innerHTML = `
                     <img src=${this.src} alt=${this.alt}>
@@ -263,35 +265,59 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    new MenuCard(
-        "img/tabs/vegy.jpg",
-        "vegy",
-        'Меню "Фитнес"',
-        'Меню "Фитнес" - это новый подход к приготовлению блюд: больше свежих овощей и фруктов. Продукт активных и здоровых людей. Это абсолютно новый продукт с оптимальной ценой и высоким качеством!',
-        9,
-        ".menu .container",
+    const getResource = async (url) => { // будем получать данные с свервера, get запрос, данные для постинга уже не нужны
+        const res = await fetch(url);
+        if (!res.ok) { // если пошло что-то не так
+            throw new Error(`Couldn't fetch ${url}, status: ${res.status}`); // создаем объект ошибки и выкидываем
+        } // помогает обнаружить ошики в операции fetch или проблемах на сайте
 
-    ).render();
+        return await res.json();
+    };
 
-    new MenuCard(
-        "img/tabs/post.jpg",
-        "post",
-        'Меню "Постное"',
-        'Меню “Постное” - это тщательный подбор ингредиентов: полное отсутствие продуктов животного происхождения, молоко из миндаля, овса, кокоса или гречки, правильное количество белков за счет тофу и импортных вегетарианских стейков.',
-        14,
-        ".menu .container",
-        'menu__item'
-    ).render();
 
-    new MenuCard(
-        "img/tabs/elite.jpg",
-        "elite",
-        'Меню “Премиум”',
-        'В меню “Премиум” мы используем не только красивый дизайн упаковки, но и качественное исполнение блюд. Красная рыба, морепродукты, фрукты - ресторанное меню без похода в ресторан!',
-        21,
-        ".menu .container",
-        'menu__item'
-    ).render();
+    axios.get('http://localhost:3000/menu')
+        .then(data => {
+            data.data.forEach(({
+                img,
+                altimg,
+                title,
+                descr,
+                price
+            }) => { // data.data потому что обращаемся именно к тем данным, которые получили
+                new MenuCard(img, altimg, title, descr, price, '.menu .container').render();
+            });
+        });
+
+    // getResource('http://localhost:3000/menu') // запрос ушел, необходима обработка
+    //     .then(data => { // получаем массив с объектами
+    //         data.forEach(({img,altimg, title, descr, price}) => { // вытаскиваем каждое свойство из данного объекта
+    //             new MenuCard(img,altimg, title, descr, price, '.menu .container').render(); // конструктор будет создаваться столько раз, сколько у нас объектов внутри массива, который придет с сервера
+    //         }); // плюс добавляем класс родителя, куда мы все это помещаем
+    //     });
+    // другой варинт решения, создание прямо на странце без обращения к классам
+    // getResource('http://localhost:3000/menu')
+    //     .then(data => createCard(data));
+
+    // function createCard(data){ // данные от сервера, 
+    //     data.forEach(({img,altimg, title, descr, price}) => { // деструктурируем объект на отдельные свойства
+    //         const element = document.createElement('div');
+
+    //         element.classList.add('menu__item');
+
+    //         element.innerHTML = `
+    //         <img src=${img} alt=${altimg}>
+    //         <h3 class="menu__item-subtitle">${title}</h3>
+    //         <div class="menu__item-descr">${descr}</div>
+    //         <div class="menu__item-divider"></div>
+    //         <div class="menu__item-price">
+    //             <div class="menu__item-cost">Цена:</div>
+    //             <div class="menu__item-total"><span>${price}</span> грн/день</div>
+    //         </div>
+    //         `;
+
+    //         document.querySelector('.menu .container').append(element);
+    //     });
+    // }
 
     // Forms
     const forms = document.querySelectorAll('form');
@@ -302,10 +328,25 @@ document.addEventListener('DOMContentLoaded', () => {
         failure: 'Something went wrong'
     };
     forms.forEach((action) => {
-        postData(action); // подвязываем к каждой форме функцию
+        bindPostData(action); // подвязываем к каждой форме функцию
     });
+    // async - внутри функции будет асинхронный код
+    // await - ставим перед теми операциями которые нам необходимо дождаться
+    const postData = async (url, data) => { // передаем адрес и данные для постинга
+        const res = await fetch(url, { // посылаем запрос на сервер,ждем результат, что не принимать пустое поле, из-за асинхронности
+            method: 'POST',
+            headers: {
+                'Content-type': 'application/json' // прописываем заголовок
+            },
+            body: data
+        });
 
-    function postData(form) {
+        return await res.json(); // вернем уже в формате json, ждем окнца промиса и только тогда возращает из функции
+    }; // отвечает за постинг данных
+
+
+
+    function bindPostData(form) { // отвечает за привязку постинга
         form.addEventListener('submit', (e) => { // submit срабатывает каждый раз когда мы пытаемся отрпавить какую-то форму, при нажатии энтера или нужной кнопки
             e.preventDefault(); // чтобы страница постоянно не перегружалась
 
@@ -317,8 +358,8 @@ document.addEventListener('DOMContentLoaded', () => {
             `; // динамически добавляем несколько стилей для загрузки
             // например сообщение о загрузке, динамически создается еще один блок
             // form.append(statusMessage); // просто добавляем новый блок к форме
-            form.insertAdjacentElement('afterend', statusMessage ); // указываем два аргумента, 1- куда вставляем элемент, 2- то, что нам нужно вставить
-                // спинер будет появляться полсе всех действий в модальном окне
+            form.insertAdjacentElement('afterend', statusMessage); // указываем два аргумента, 1- куда вставляем элемент, 2- то, что нам нужно вставить
+            // спинер будет появляться полсе всех действий в модальном окне
 
 
             // const request = new XMLHttpRequest(); // создаем новый пост запрос
@@ -326,30 +367,26 @@ document.addEventListener('DOMContentLoaded', () => {
             // request.setRequestHeader('Content-type','multipart/form-data'); // указываем тип приходящего контента
             // request.setRequestHeader('Content-type','application/json'); //для работы с json форматом 
             const formData = new FormData(form); // во внутрь помещаем форму, которой нужно собрать данные
-            
-            const object = {};
-            formData.forEach(function(value, key) {
-                object[key] = value; // на основании данных formData сформировали объект для работа с json
-            }); // чтобы можно было использовать конвертацию json
 
-            fetch('server.php', {
-                method: 'POST',
-                headers: {
-                    'Content-type':'application/json' // прописываем заголовок
-                },
-                body: JSON.stringify(object)
-            })
-            .then(data => data.text()) // превращаем ответ в обычный текст
-            .then(data => {
+            // const object = {};
+            // formData.forEach(function(value, key) {
+            //     object[key] = value; // на основании данных formData сформировали объект для работа с json
+            // }); // чтобы можно было использовать конвертацию json
+
+            const json = JSON.stringify(Object.fromEntries(formData.entries())); // чтобы получить данные с формы в формате маленьких массивов
+            // превращаем эти массивы в обычный объект в формат json
+
+            postData('http://localhost:3000/requests', json) // теперь из postData вернется промис, который м обработаем
+                .then(data => { // постим данные на указанный сервер в формате json
                     console.log(data); // данные - которые возвращаются из промиса, то что вернул сервер
                     showThanksModal(message.success); // когда обработался успешно запрос, меняем на новое сообщение
                     // form.reset(); // сбрасываем форму
                     statusMessage.remove(); // статус мессадж используется только для загрузки, таймаут не нужен 
-            }).catch(() => {
-                showThanksModal(message.failure); //  в результате ошибки выдаст другое сообщение
-            }).finally(() => {
-                form.reset();
-            });
+                }).catch(() => {
+                    showThanksModal(message.failure); //  в результате ошибки выдаст другое сообщение
+                }).finally(() => {
+                    form.reset();
+                });
 
 
             // request.addEventListener('load', () => { // отслеживаем конечную загрузку запроса
@@ -358,21 +395,21 @@ document.addEventListener('DOMContentLoaded', () => {
             //         showThanksModal(message.success); // когда обработался успешно запрос, меняем на новое сообщение
             //         form.reset(); // сбрасываем форму
             //         statusMessage.remove(); // статус мессадж используется только для загрузки, таймаут не нужен
-                   
+
             //     } else {
             //         showThanksModal(message.failure);
             //         form.reset(); // сбрасываем форму
-                    
+
             //         statusMessage.remove(); // чтобы лишняя инфа исчезла через какое-то время
-                    
+
             //     }
 
             // });
-        }); 
+        });
     }
 
     function showThanksModal(message) {
-        const prevModalDialog = document.querySelector('.modal__dialog'); 
+        const prevModalDialog = document.querySelector('.modal__dialog');
         prevModalDialog.classList.add('hide'); // прячем основное модальное окно
 
         openModal(); // отвечает за отркытие модальных окон
@@ -389,7 +426,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('.modal').append(thanksModal);
         setTimeout(() => {
             thanksModal.remove();
-            prevModalDialog.classList.add('show'); 
+            prevModalDialog.classList.add('show');
             prevModalDialog.classList.remove('hide');
             closeModal(); // закрывает все модальные окна
         }, 4000); // через 4 секунды модальное окно с ответом на запрос пропадает, а обычное модальное окно с запросом снова добавляется как эелмент
@@ -412,8 +449,73 @@ document.addEventListener('DOMContentLoaded', () => {
     //     // но эта команда возвращает промис!
     //     .then(json => console.log(json));
 
-    fetch('http://localhost:3000/menu')
+    fetch('http://localhost:3000/requests')
         .then(data => data.json()) // берем ответ от сервера превращая в обычный js
         .then(res => console.log(res));
+
+
+    const slidePrev = document.querySelector('.offer__slider-prev');
+    const slideNext = document.querySelector('.offer__slider-next');
+    const slides = document.querySelectorAll('.offer__slide');
+    const currentNumber = document.querySelector('#current');
+    const totalNumber = document.querySelector('#total');
+
+
+
+
+
+    function hideSlide() {
+        slides.forEach(item => {
+            item.classList.add('hide');
+            item.classList.remove('show', 'fade');
+        });
+    }
+
+    function showSlide(i = 0) {
+        slides[i].classList.add('show', 'fade');
+        slides[i].classList.remove('hide');
+
+    }
+
+    hideSlide();
+    showSlide();
+
+    // function indexPlus(){
+
+    // }
+
+    let currentSlide = 0; // какой слайд сейчас выбран
+    slideNext.addEventListener('click', function () {
+        hideSlide(currentSlide);
+        currentSlide = currentSlide === slides.length - 1 ? 0 : currentSlide + 1;// из кол-ва слайдов вычитаем один и по невыполнению условия показываем следующий
+        // либо показываем самый первый, если условие истинно
+        showSlide(currentSlide);
+        if (slides.length < 10){
+            currentNumber.textContent = `0${currentSlide+1}`;
+            totalNumber.textContent = `0${slides.length}`;
+        } else {
+            currentNumber.textContent = currentSlide+1;
+            totalNumber.textContent = slides.length;
+        }
+
+    });
+
+    slidePrev.addEventListener('click', function() {
+        hideSlide(currentSlide);
+        currentSlide = currentSlide === 0 ? 3 : currentSlide -1  ;
+        showSlide(currentSlide);
+
+        if (slides.length < 10){
+            currentNumber.textContent = `0${currentSlide+1}`;
+            totalNumber.textContent = `0${slides.length}`;
+        } else {
+            currentNumber.textContent = currentSlide+1;
+            totalNumber.textContent = slides.length;
+        }
+    });
+    
+
+
+
 });
 // style.display - Многоцелевое свойство, которое определяет, как элемент должен быть показан в документе
