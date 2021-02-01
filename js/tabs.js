@@ -233,7 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
             this.price = price;
             this.classes = classes;
             this.parent = document.querySelector(parentSelector);
-            this.transfer = 27;
+            this.transfer = 90;
             this.changeToUAH();
         }
 
@@ -258,7 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="menu__item-divider"></div>
                     <div class="menu__item-price">
                         <div class="menu__item-cost">Цена:</div>
-                        <div class="menu__item-total"><span>${this.price}</span> грн/день</div>
+                        <div class="menu__item-total"><span>${this.price}</span> руб/день</div>
                     </div>
             `;
             this.parent.append(element); // просто в родителя добавляем наш элемент в конец
@@ -551,5 +551,95 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     
+
+    // calculator
+
+    const result = document.querySelector('.calculating__result span'); // берем класс и его внутренний спен
+    let sex = 'female',  // задаем дефолтное значение
+        height, weight, age, 
+        ratio = 1.375; // создаем 5 нужных элементов
+
+    function calcTotal(){ // будем запускать каждый раз, когда выполняется какое-то изменение
+        if (!sex || !height ||!weight || !age || !ratio){ // если у нас нет хотя бы одного компонента, будет хотя бы один false
+            result.textContent = '____';
+            return; // досрочно прерываем функцию
+        }
+
+        if (sex === 'female'){
+            result.textContent = Math.round((447.6 + (9.2 * weight) + (3.1 * height) - (4.3 * age)) * ratio);
+        } else {
+            result.textContent = Math.round((88.36 + (13.4 * weight) + (4.8 * height) - (5.7 * age)) * ratio);
+        }
+        
+    }
+
+    calcTotal();
+
+    function getStaticInformation(parentSelector, activeClass) {
+        const elements = document.querySelectorAll(`${parentSelector} div`); // внутри этого родителя будем получать все дивы
+        
+        elements.forEach(element => {
+            element.addEventListener('click', (e) => { // задаем событие каждому элементу, на который кликнули
+                if (e.target.getAttribute('data-ratio')){ // объект события, проверяем наличие атрибута
+                    ratio = +e.target.getAttribute('data-ratio'); // если атрибут есть, засовываем его значение в ratio
+                } else { // или если кликнули не в атрибут, значит кликнули в пол человека
+                    sex = e.target.getAttribute('id'); // получаем значение идентификатора
+                }
+    
+    
+                elements.forEach(item => {
+                    item.classList.remove(activeClass);
+                });
+    
+                e.target.classList.add(activeClass);  // тот объект, в который кликнули назначаем класс активности
+                calcTotal();
+            });
+        });
+    }
+        // document.querySelector(parentSelector).addEventListener('click', (e) => { // будем указывать, куда нажали в родителе
+        //     if (e.target.getAttribute('data-ratio')){ // объект события, проверяем наличие атрибута
+        //         ratio = +e.target.getAttribute('data-ratio'); // если атрибут есть, засовываем его значение в ratio
+        //     } else { // или если кликнули не в атрибут, значит кликнули в пол человека
+        //         sex = e.target.getAttribute('id'); // получаем значение идентификатора
+        //     }
+
+
+        //     elements.forEach(item => {
+        //         item.classList.remove(activeClass);
+        //     });
+
+        //     e.target.classList.add(activeClass);  // тот объект, в который кликнули назначаем класс активности
+        //     calcTotal();
+        // });
+
+
+    getStaticInformation('#gender', 'calculating__choose-item_active'); // передаем кусок кода с полом человека
+    getStaticInformation('.calculating__choose_big', 'calculating__choose-item_active'); // часть кода с уровнем подготовки человека
+
+
+    function getDynamicInformation(selector){ // берем селектор инпута, который нас интересует
+        const input = document.querySelector(selector);
+
+        input.addEventListener('input', ()=> { // задаем событие ввода в какой-то конкретный элемент
+            switch(input.getAttribute('id')) { // проверяем строку, в которую вводим, ее id
+                case 'height': // если человек вводит в графу роста(значение id = 'height')
+                    height = +input.value; //  записываем в переменную роста информацию, которую ввели
+                    break; // останавливаем после записи
+                case 'weight': // если вводим в графу веса(значение id = 'weight')
+                    weight = +input.value; // записываем в переменную веса информацию, которую ввели
+                    break;
+                case 'age': // если вводим в графу возраста(значение id ='age')
+                    age = +input.value; // записываем в переменную возраста
+                    break;
+                }
+
+                calcTotal();
+        });
+
+    }
+
+    getDynamicInformation('#height');
+    getDynamicInformation('#weight');
+    getDynamicInformation('#age');
 });
 // style.display - Многоцелевое свойство, которое определяет, как элемент должен быть показан в документе
